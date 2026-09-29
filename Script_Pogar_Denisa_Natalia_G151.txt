@@ -1,0 +1,791 @@
+-- NUME SI PRENUME: POGAR DENISA NATALIA
+-- GRUPA: 151
+-- TITLU PROIECT: Gestiunea unei Grădini Zoologice
+
+
+-- SCRIPT CREATE
+
+--- TABELUL CONTRACT
+CREATE TABLE CONTRACT (
+    id_contract NUMBER(5),
+    salariu NUMBER(8, 2),
+    tip_contract VARCHAR2(25) NOT NULL, 
+    data_semnarii DATE DEFAULT SYSDATE,
+    zile_concediu_disp NUMBER(2),
+    constraint pk_contract PRIMARY KEY(id_contract),
+    CHECK (salariu>0),
+    CHECK (upper(tip_contract) IN ('DETERMINAT', 'NEDETERMINAT', 'PART-TIME'))
+);
+
+---TABELUL ANGAJAT
+CREATE TABLE ANGAJAT (
+    id_angajat NUMBER(5),
+    id_contract NUMBER(5),
+    nume VARCHAR2(25) NOT NULL,
+    prenume VARCHAR2(25) NOT NULL,
+    cnp CHAR(13) NOT NULL,
+    telefon CHAR(10) NOT NULL,
+    email VARCHAR2(100),
+    adresa VARCHAR2(100),
+    functie VARCHAR2(25),
+    data_angajarii DATE,
+    constraint pk_angajat PRIMARY KEY(id_angajat),
+    constraint fk_contract_angajat FOREIGN KEY (id_contract) REFERENCES CONTRACT(id_contract),
+    constraint uk_cnp UNIQUE(cnp),
+    constraint uk_telefon UNIQUE(telefon)
+);
+
+---Tabel SECTOR
+CREATE TABLE SECTOR (
+    id_sector NUMBER(5),
+    denumire VARCHAR2(50) NOT NULL,
+    suprafata NUMBER(8, 2) NOT NULL,
+    tip_habitat VARCHAR2(30),
+    cap_maxima NUMBER(3), 
+    temp_medie NUMBER(4, 1), 
+    CONSTRAINT pk_sector PRIMARY KEY (id_sector),
+    CONSTRAINT uk_denumire_sector UNIQUE (denumire),
+    CONSTRAINT check_suprafata CHECK (suprafata>0),
+    CONSTRAINT check_cap_maxima CHECK (cap_maxima>0)
+);
+
+---TABEL ANIMAL
+CREATE TABLE ANIMAL (
+    id_animal NUMBER(5),
+    id_sector NUMBER(5), 
+    tip_animal VARCHAR2(20) NOT NULL,
+    data_nasterii DATE,
+    data_venirii DATE DEFAULT SYSDATE,
+    specie VARCHAR2(50) NOT NULL,
+    sex CHAR(1),
+    status_sanatate VARCHAR2(50),
+    CONSTRAINT pk_animal PRIMARY KEY (id_animal),
+    CONSTRAINT fk_animal_sector FOREIGN KEY (id_sector) REFERENCES SECTOR(id_sector),
+    CONSTRAINT check_date_animal CHECK (data_venirii >= data_nasterii),
+    CONSTRAINT check_sex CHECK (UPPER(sex) IN ('M', 'F')),
+    CONSTRAINT check_tip_animal CHECK (UPPER(tip_animal) IN ('MAMIFER', 'PESTE', 'PASARE'))
+);
+
+---SUBTABEL MAMIFER
+CREATE TABLE MAMIFER (
+    id_animal NUMBER(5),
+    perioada_gestatie NUMBER(3),
+    tip_dieta VARCHAR2(30),
+    CONSTRAINT pk_mamifer PRIMARY KEY (id_animal),
+    CONSTRAINT fk_mamifer_animal FOREIGN KEY (id_animal) REFERENCES ANIMAL(id_animal) ON DELETE CASCADE,
+    CONSTRAINT check_gestatie CHECK (perioada_gestatie>0),
+    CONSTRAINT check_dieta_mamifer CHECK (UPPER(tip_dieta) IN ('ERBIVOR', 'CARNIVOR', 'OMNIVOR'))
+);
+
+---SUBTABEL PASARE
+CREATE TABLE PASARE (
+    id_animal NUMBER(5),
+    anvergura_aripi NUMBER(5, 2), 
+    este_zburatoare CHAR(2),
+    CONSTRAINT pk_pasare PRIMARY KEY (id_animal),
+    CONSTRAINT fk_pasare_animal FOREIGN KEY (id_animal) REFERENCES ANIMAL(id_animal) ON DELETE CASCADE,
+    CONSTRAINT check_zburatoare CHECK (UPPER(este_zburatoare) IN ('DA', 'NU')),
+    CONSTRAINT check_anvergura CHECK (anvergura_aripi>0)
+);
+
+---SUBTABEL PESTE
+CREATE TABLE PESTE (
+    id_animal NUMBER(5),
+    tip_apa VARCHAR2(25),
+    temp_apa NUMBER(4, 1),
+    adancime_minima NUMBER(5, 2), -- în metri
+    CONSTRAINT pk_peste PRIMARY KEY (id_animal),
+    CONSTRAINT fk_peste_animal FOREIGN KEY (id_animal) REFERENCES ANIMAL(id_animal) ON DELETE CASCADE,
+    CONSTRAINT check_tip_apa CHECK (UPPER(tip_apa) IN ('DULCE', 'SARATA')),
+    CONSTRAINT check_adancime CHECK (adancime_minima>=0)
+);
+
+---TABEL HRANA
+CREATE TABLE HRANA (
+    id_hrana NUMBER(5),
+    denumire VARCHAR2(50) NOT NULL,
+    stoc_kg NUMBER(10, 2) DEFAULT 0,
+    data_expirarii DATE,
+    categorie VARCHAR2(30), 
+    CONSTRAINT pk_hrana PRIMARY KEY (id_hrana),
+    CONSTRAINT check_stoc CHECK (stoc_kg>=0),
+    CONSTRAINT check_pret CHECK (pret_per_kg>0)
+);
+
+---TABEL FURNIZOR
+CREATE TABLE FURNIZOR (
+    id_furnizor NUMBER(5),
+    nume VARCHAR2(100) NOT NULL,
+    telefon CHAR(10),
+    email VARCHAR2(100),
+    oras VARCHAR2(50),
+    cui VARCHAR2(15) NOT NULL,
+    CONSTRAINT pk_furnizor PRIMARY KEY (id_furnizor),
+    CONSTRAINT uk_cui UNIQUE (cui),  
+    CONSTRAINT uk_email_furnizor UNIQUE (email)
+);
+
+---TABEL SPECTACOL
+CREATE TABLE SPECTACOL (
+    id_spectacol NUMBER(5),
+    nume VARCHAR2(100) NOT NULL,
+    locatie VARCHAR2(50) NOT NULL,
+    data_spectacol DATE NOT NULL,
+    durata_min NUMBER(3),
+    cap_spectatori NUMBER(4),
+    CONSTRAINT pk_spectacol PRIMARY KEY (id_spectacol),
+    CONSTRAINT check_durata CHECK (durata_min>0),
+    CONSTRAINT check_capacitate CHECK (cap_spectatori>0)
+);
+
+---TABEL VIIZTATOR
+CREATE TABLE VIZITATOR (
+    id_vizitator NUMBER(5),
+    nume VARCHAR2(50) NOT NULL,
+    prenume VARCHAR2(50) NOT NULL,
+    email VARCHAR2(100),
+    telefon CHAR(10),
+    CONSTRAINT pk_vizitator PRIMARY KEY (id_vizitator),
+    CONSTRAINT uk_email_vizitator UNIQUE (email),
+    CONSTRAINT uk_tel_vizitator UNIQUE (telefon)
+);
+
+
+---TABEL BILET
+CREATE TABLE BILET (
+    id_bilet NUMBER(5),
+    id_vizitator NUMBER(5) NOT NULL,
+    tip_bilet VARCHAR2(20),
+    pret NUMBER(6, 2) NOT NULL,
+    data_valabilitate DATE NOT NULL,
+    status VARCHAR2(20),
+    CONSTRAINT pk_bilet PRIMARY KEY (id_bilet),
+    CONSTRAINT fk_bilet_vizitator FOREIGN KEY (id_vizitator) 
+        REFERENCES VIZITATOR(id_vizitator) ON DELETE CASCADE,
+    CONSTRAINT check_pret_bilet CHECK (pret>=0),
+    CONSTRAINT check_tip_bilet CHECK (UPPER(tip_bilet) IN ('ADULT', 'COPIL', 'STUDENT', 'PENSIONAR', 'GRUP')),
+    CONSTRAINT check_status_bilet CHECK (UPPER(status) IN ('VALID', 'UTILIZAT', 'ANULAT', 'EXPIRAT'))
+);
+
+---TABEL RECENZIE
+CREATE TABLE RECENZIE (
+    id_recenzie NUMBER(5),
+    id_vizitator NUMBER(5) NOT NULL,
+    id_sector NUMBER(5) NOT NULL,
+    nota NUMBER(1) NOT NULL,
+    comentariu VARCHAR2(500),
+    data_review DATE DEFAULT SYSDATE,
+    CONSTRAINT pk_recenzie PRIMARY KEY (id_recenzie),
+    CONSTRAINT fk_recenzie_vizitator FOREIGN KEY (id_vizitator) 
+    REFERENCES VIZITATOR(id_vizitator) ON DELETE CASCADE,
+    CONSTRAINT fk_recenzie_sector FOREIGN KEY (id_sector) 
+    REFERENCES SECTOR(id_sector) ON DELETE CASCADE,
+    CONSTRAINT check_nota CHECK (nota BETWEEN 1 AND 5)
+);
+
+---TABEL CONSULTATIE
+CREATE TABLE CONSULTATIE (
+    id_consultatie NUMBER(5),
+    id_medic NUMBER(5) NOT NULL,
+    id_animal NUMBER(5) NOT NULL,
+    data_consultatie DATE DEFAULT SYSDATE NOT NULL,
+    diagnostic VARCHAR2(100),
+    tratament VARCHAR2(100),
+    greutate_masurata NUMBER(10, 2),
+    observatii VARCHAR2(200),
+    CONSTRAINT pk_consultatie PRIMARY KEY (id_consultatie),
+    CONSTRAINT fk_cons_medic FOREIGN KEY (id_medic) REFERENCES ANGAJAT(id_angajat),
+    CONSTRAINT fk_cons_animal FOREIGN KEY (id_animal) REFERENCES ANIMAL(id_animal),
+    CONSTRAINT check_greutate CHECK (greutate_masurata>0)
+);
+---TABEL ASOCIATIV ANIMAL_impreuna_cu_ANGAJAT_participa_la_SPECTACOL
+CREATE TABLE PARTICIPA_LA (
+    id_animal NUMBER(5),
+    id_dresor NUMBER(5),
+    id_spectacol NUMBER(5),
+    ore_pregatire NUMBER(4, 1),
+    bonus_financiar NUMBER(8, 2),
+    stare_animal_final VARCHAR2(100),
+    CONSTRAINT pk_participa_la PRIMARY KEY (id_animal, id_dresor, id_spectacol),
+    CONSTRAINT fk_part_animal FOREIGN KEY (id_animal) REFERENCES ANIMAL(id_animal),
+    CONSTRAINT fk_part_dresor FOREIGN KEY (id_dresor) REFERENCES ANGAJAT(id_angajat),
+    CONSTRAINT fk_part_spectacol FOREIGN KEY (id_spectacol) REFERENCES SPECTACOL(id_spectacol)
+);
+
+---TABEL ASOCIATIV ANGAJAT_ingrijeste_ANIMAL
+CREATE TABLE INGRIJESTE (
+    id_animal NUMBER(5),
+    id_ingrijitor NUMBER(5),
+    ore_pe_sap NUMBER(3),
+    tip_activitate VARCHAR2(50),
+    data_inceput DATE DEFAULT SYSDATE,
+    CONSTRAINT pk_ingrijeste PRIMARY KEY (id_animal, id_ingrijitor),
+    CONSTRAINT fk_ingr_animal FOREIGN KEY (id_animal) REFERENCES ANIMAL(id_animal),
+    CONSTRAINT fk_ingr_angajat FOREIGN KEY (id_ingrijitor) REFERENCES ANGAJAT(id_angajat)
+);
+
+---TABEL ASOCIATIV ANIMAL_mananca_HRANA
+CREATE TABLE MANANCA (
+    id_animal NUMBER(5),
+    id_hrana NUMBER(5),
+    cant_zilnica_kg NUMBER(6, 2),
+    portii_pe_zi NUMBER(2),
+    observatii VARCHAR2(200),
+    CONSTRAINT pk_mananca PRIMARY KEY (id_animal, id_hrana),
+    CONSTRAINT fk_mananca_animal FOREIGN KEY (id_animal) REFERENCES ANIMAL(id_animal),
+    CONSTRAINT fk_mananca_hrana FOREIGN KEY (id_hrana) REFERENCES HRANA(id_hrana),
+    CONSTRAINT check_cantitate CHECK (cant_zilnica_kg > 0)
+);
+
+---TABEL ASOCIATIV FURNIZOR_furnizeaza_MANCARE
+CREATE TABLE FURNIZEAZA (
+    id_hrana NUMBER(5),
+    id_furnizor NUMBER(5),
+    pret_per_kg NUMBER(8, 2),
+    timp_livrare_zile NUMBER(3),
+    cant_minima NUMBER(10, 2),
+    CONSTRAINT pk_furnizeaza PRIMARY KEY (id_hrana, id_furnizor),
+    CONSTRAINT fk_furn_hrana FOREIGN KEY (id_hrana) REFERENCES HRANA(id_hrana),
+    CONSTRAINT fk_furn_furnizor FOREIGN KEY (id_furnizor) REFERENCES FURNIZOR(id_furnizor),
+    CONSTRAINT check_pret_furniza CHECK (pret_per_kg > 0)
+);
+
+-- SCRIPT INSERT
+
+---TABEL CONTRACT
+
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (1, 4500.00, 'NEDETERMINAT', TO_DATE('2020-05-10', 'YYYY-MM-DD'), 21);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (2, 3200.50, 'DETERMINAT', TO_DATE('2023-01-15', 'YYYY-MM-DD'), 20);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (3, 2100.00, 'PART-TIME', TO_DATE('2023-06-01', 'YYYY-MM-DD'), 10);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (4, 6000.00, 'NEDETERMINAT', TO_DATE('2018-11-20', 'YYYY-MM-DD'), 25);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, zile_concediu_disp) 
+VALUES (5, 5200.00, 'NEDETERMINAT', NULL);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (6, 2800.00, 'PART-TIME', TO_DATE('2024-02-15', 'YYYY-MM-DD'), 12);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (7, 4100.00, 'DETERMINAT', TO_DATE('2022-08-01', 'YYYY-MM-DD'), 21);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (8, 3900.00, 'NEDETERMINAT', NULL, 21);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (9, 7500.00, 'NEDETERMINAT', TO_DATE('2015-04-10', 'YYYY-MM-DD'), 28);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (10, 3100.00, 'DETERMINAT', TO_DATE('2023-11-01', 'YYYY-MM-DD'), NULL);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (11, 4800.00, 'NEDETERMINAT', TO_DATE('2021-09-17', 'YYYY-MM-DD'), 21);
+INSERT INTO CONTRACT (id_contract, salariu, tip_contract, data_semnarii, zile_concediu_disp) 
+VALUES (12, 2500.00, 'PART-TIME', NULL, NULL);
+
+SELECT * FROM CONTRACT;
+
+
+---TABEL ANGAJAT
+
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (1, 1, 'Popescu', 'Ion', '1800512123456', '0722111001', 'ion.popescu@zoo.ro', 'Str. Lunga 1, Bucuresti', 'Medic Veterinar', TO_DATE('2020-05-15', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (2, 2, 'Ionescu', 'Maria', '2850314123456', '0722111002', 'maria.ionescu@zoo.ro', 'Blv. Unirii 45', 'Ingrijitor', TO_DATE('2023-01-20', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (3, 3, 'Marin', 'Andrei', '1950718123456', '0722111003', NULL, NULL, NULL, TO_DATE('2023-06-05', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (4, 4, 'Stan', 'Elena', '2901111123456', '0722111004', 'elena.stan@zoo.ro', 'Str. Florilor 2', 'Sef Sector', TO_DATE('2018-12-01', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (5, 5, 'Dumitru', 'Alexandru', '1880922123456', '0722111005', 'alex.dumitru@zoo.ro', 'Str. Plevnei 9', 'Dresor', TO_DATE('2019-01-10', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (6, 6, 'Gheorghe', 'Alina', '2980415123456', '0722111006', NULL, 'Calea Vitan 100', 'Asistent Veterinar', TO_DATE('2024-02-20', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (7, 7, 'Stoica', 'Mihai', '1920830123456', '0722111007', 'mihai.stoica@zoo.ro', NULL, 'Ingrijitor', TO_DATE('2022-08-05', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (8, 8, 'Radu', 'Ioana', '2801212123456', '0722111008', 'ioana.radu@zoo.ro', 'Str. Soarelui 5', 'Ghid', TO_DATE('2021-03-10', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (9, 9, 'Ilie', 'George', '1750606123456', '0722111009', 'george.ilie@zoo.ro', 'Str. Muncii 8', 'Director', TO_DATE('2015-05-01', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (10, 10, 'Vasile', 'Cristina', '2941010123456', '0722111010', NULL, NULL, 'Ingrijitor', TO_DATE('2023-11-05', 'YYYY-MM-DD'));
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (11, 11, 'Constantin', 'Bogdan', '1890228123456', '0722111011', 'bogdan.c@zoo.ro', 'Blv. Dacia 33', 'Nutritionist', NULL);
+INSERT INTO ANGAJAT (id_angajat, id_contract, nume, prenume, cnp, telefon, email, adresa, functie, data_angajarii) 
+VALUES (12, 12, 'Munteanu', 'Diana', '2990714123456', '0722111012', 'diana.m@zoo.ro', 'Str. Lalelelor 4', NULL, TO_DATE('2024-01-10', 'YYYY-MM-DD'));
+
+SELECT * FROM ANGAJAT;
+
+
+---TABEL SECTOR
+
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (1, 'Savana Africana', 8500.00, 'Terestru', 50, 26.5);
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (2, 'Jungla Tropicala', 4200.50, 'Terestru-Arboricol', 30, 28.0);
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (3, 'Acvariu Oceanic', 1500.00, 'Acvatic', 200, 22.0);
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (4, 'Bazin Apa Dulce', 800.00, 'Acvatic', 300, 18.5);
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (5, 'Voliera Pasari Exotice', 2000.00, 'Aerian', 150, 24.0);
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (6, 'Zona Arctica', 1200.00, 'Mixt', 20, -5.0);
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (7, 'Reptilariu', 600.00, 'Terestru', 100, 30.0);
+-- Inserări cu valori NULL (acolo unde este permis)
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (8, 'Ferma Animalelor', 3500.00, NULL, 80, NULL);
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (9, 'Zona Carantina', 300.00, 'Interior', NULL, 22.5);
+INSERT INTO SECTOR (id_sector, denumire, suprafata, tip_habitat, cap_maxima, temp_medie) 
+VALUES (10, 'Centru Recuperare', 450.00, NULL, 10, NULL);
+
+SELECT * FROM SECTOR;
+
+
+---TABEL ANIMAL
+
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (1, 1, 'MAMIFER', TO_DATE('2015-04-12', 'YYYY-MM-DD'), TO_DATE('2016-05-10', 'YYYY-MM-DD'), 'Leu', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (2, 1, 'MAMIFER', TO_DATE('2017-08-22', 'YYYY-MM-DD'), TO_DATE('2018-09-01', 'YYYY-MM-DD'), 'Zebra', 'F', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (3, 2, 'MAMIFER', TO_DATE('2019-11-05', 'YYYY-MM-DD'), TO_DATE('2020-02-15', 'YYYY-MM-DD'), 'Maimuta Capucin', 'M', 'Rana usoara');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (4, 1, 'MAMIFER', NULL, TO_DATE('2021-03-10', 'YYYY-MM-DD'), 'Girafa', 'F', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (5, 6, 'MAMIFER', TO_DATE('2014-12-01', 'YYYY-MM-DD'), TO_DATE('2015-11-20', 'YYYY-MM-DD'), 'Urs Polar', 'M', 'In observatie');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (6, 8, 'MAMIFER', TO_DATE('2022-05-14', 'YYYY-MM-DD'), TO_DATE('2022-05-14', 'YYYY-MM-DD'), 'Iepure', 'F', NULL);
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (7, 1, 'MAMIFER', TO_DATE('2010-02-28', 'YYYY-MM-DD'), TO_DATE('2012-07-15', 'YYYY-MM-DD'), 'Elefant', 'F', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (8, 2, 'MAMIFER', NULL, TO_DATE('2023-08-10', 'YYYY-MM-DD'), 'Jaguar', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (9, 9, 'MAMIFER', TO_DATE('2024-01-10', 'YYYY-MM-DD'), TO_DATE('2024-01-15', 'YYYY-MM-DD'), 'Lup', NULL, 'Carantina');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (10, 8, 'MAMIFER', TO_DATE('2020-09-09', 'YYYY-MM-DD'), TO_DATE('2021-04-05', 'YYYY-MM-DD'), 'Ponei', 'M', 'Sanatos');
+
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (11, 5, 'PASARE', TO_DATE('2021-06-15', 'YYYY-MM-DD'), TO_DATE('2021-10-01', 'YYYY-MM-DD'), 'Papagal Ara', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (12, 5, 'PASARE', TO_DATE('2022-04-10', 'YYYY-MM-DD'), TO_DATE('2022-08-20', 'YYYY-MM-DD'), 'Tucan', 'F', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (13, 6, 'PASARE', TO_DATE('2018-11-25', 'YYYY-MM-DD'), TO_DATE('2019-03-15', 'YYYY-MM-DD'), 'Pinguin Imperial', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (14, 1, 'PASARE', NULL, TO_DATE('2020-05-10', 'YYYY-MM-DD'), 'Strut', 'F', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (15, 5, 'PASARE', TO_DATE('2019-07-07', 'YYYY-MM-DD'), TO_DATE('2020-01-11', 'YYYY-MM-DD'), 'Paun', 'M', NULL);
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (16, 5, 'PASARE', TO_DATE('2023-02-14', 'YYYY-MM-DD'), TO_DATE('2023-06-01', 'YYYY-MM-DD'), 'Bufnita', 'F', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (17, 4, 'PASARE', TO_DATE('2020-10-10', 'YYYY-MM-DD'), TO_DATE('2021-02-28', 'YYYY-MM-DD'), 'Pelican', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (18, 4, 'PASARE', NULL, TO_DATE('2018-09-09', 'YYYY-MM-DD'), 'Flamingo', 'F', 'In observatie');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (19, 5, 'PASARE', TO_DATE('2017-03-03', 'YYYY-MM-DD'), TO_DATE('2017-09-15', 'YYYY-MM-DD'), 'Vultur Plesuv', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (20, 9, 'PASARE', TO_DATE('2024-03-01', 'YYYY-MM-DD'), TO_DATE('2024-03-05', 'YYYY-MM-DD'), 'Soim', NULL, 'Carantina');
+
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (21, 3, 'PESTE', TO_DATE('2016-08-20', 'YYYY-MM-DD'), TO_DATE('2017-01-10', 'YYYY-MM-DD'), 'Rechin Alb', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (22, 3, 'PESTE', TO_DATE('2021-12-05', 'YYYY-MM-DD'), TO_DATE('2022-04-15', 'YYYY-MM-DD'), 'Peste Clovn', 'F', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (23, 4, 'PESTE', TO_DATE('2022-01-15', 'YYYY-MM-DD'), TO_DATE('2022-05-20', 'YYYY-MM-DD'), 'Crap', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (24, 3, 'PESTE', NULL, TO_DATE('2019-11-11', 'YYYY-MM-DD'), 'Pisica de Mare', 'F', NULL);
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (25, 4, 'PESTE', TO_DATE('2023-05-10', 'YYYY-MM-DD'), TO_DATE('2023-09-01', 'YYYY-MM-DD'), 'Piranha', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (26, 3, 'PESTE', TO_DATE('2020-07-22', 'YYYY-MM-DD'), TO_DATE('2020-12-10', 'YYYY-MM-DD'), 'Calut de Mare', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (27, 4, 'PESTE', TO_DATE('2021-02-18', 'YYYY-MM-DD'), TO_DATE('2021-06-05', 'YYYY-MM-DD'), 'Pastrav', 'F', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (28, 3, 'PESTE', NULL, TO_DATE('2018-04-30', 'YYYY-MM-DD'), 'Ton', 'M', 'Sanatos');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (29, 4, 'PESTE', TO_DATE('2015-09-09', 'YYYY-MM-DD'), TO_DATE('2016-10-10', 'YYYY-MM-DD'), 'Morun', 'F', 'In observatie');
+INSERT INTO ANIMAL (id_animal, id_sector, tip_animal, data_nasterii, data_venirii, specie, sex, status_sanatate) 
+VALUES (30, 9, 'PESTE', TO_DATE('2024-02-10', 'YYYY-MM-DD'), TO_DATE('2024-02-25', 'YYYY-MM-DD'), 'Somon', NULL, 'Carantina');
+
+SELECT * FROM ANIMAL;
+
+
+---TABEL MAMIFER
+
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (1, 110, 'CARNIVOR');
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (2, 390, 'ERBIVOR');
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (3, 160, 'OMNIVOR');
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (4, 450, 'ERBIVOR');
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (5, 240, 'CARNIVOR');
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (6, 31, 'ERBIVOR');
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (7, 660, 'ERBIVOR');
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (8, 100, 'CARNIVOR');
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (9, 63, 'CARNIVOR');
+INSERT INTO MAMIFER (id_animal, perioada_gestatie, tip_dieta) VALUES (10, 330, 'ERBIVOR');
+
+SELECT * FROM MAMIFER;
+
+
+---TABEL PASARE
+
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (11, 1.20, 'DA');
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (12, 0.50, 'DA');
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (13, 0.80, 'NU');
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (14, 2.00, 'NU');
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (15, 1.50, 'DA');
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (16, 1.10, 'DA');
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (17, 2.80, 'DA');
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (18, 1.40, 'DA');
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (19, 2.30, 'DA');
+INSERT INTO PASARE (id_animal, anvergura_aripi, este_zburatoare) VALUES (20, 1.00, 'DA');
+
+SELECT * FROM PASARE;
+
+
+---TABEL PESTE
+
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (21, 'SARATA', 18.0, 10.0);
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (22, 'SARATA', 26.0, 2.0);
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (23, 'DULCE', 15.0, 1.5);
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (24, 'SARATA', 22.0, 5.0);
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (25, 'DULCE', 25.0, 1.0);
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (26, 'SARATA', 24.0, 0.5);
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (27, 'DULCE', 12.0, 1.0);
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (28, 'SARATA', 20.0, 8.0);
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (29, 'DULCE', 16.0, 4.0);
+INSERT INTO PESTE (id_animal, tip_apa, temp_apa, adancime_minima) VALUES (30, 'DULCE', 14.0, 2.0);
+
+SELECT * FROM PESTE;
+
+
+---TABEL HRANA
+
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (1, 'Carne de vita', 150.50, TO_DATE('2024-12-01', 'YYYY-MM-DD'), 'Carne');
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (2, 'Fan uscat', 500.00, TO_DATE('2025-06-15', 'YYYY-MM-DD'), 'Furaje');
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (3, 'Amestec seminte exotice', 45.00, TO_DATE('2024-10-20', 'YYYY-MM-DD'), 'Seminte');
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (4, 'Peste oceanic congelat', 200.00, TO_DATE('2024-08-30', 'YYYY-MM-DD'), 'Peste');
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (5, 'Fructe proaspete mixte', 60.00, TO_DATE('2024-05-10', 'YYYY-MM-DD'), 'Fructe');
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (6, 'Legume asortate', 80.00, TO_DATE('2024-05-12', 'YYYY-MM-DD'), 'Legume');
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (7, 'Suplimente calciu', 10.00, NULL, 'Supliment');
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (8, 'Insecte vii', 5.00, NULL, NULL);
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (9, 'Lucerna', 300.00, TO_DATE('2025-01-10', 'YYYY-MM-DD'), 'Furaje');
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (10, 'Carne de pui', 120.00, TO_DATE('2024-09-15', 'YYYY-MM-DD'), 'Carne');
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (11, 'Viermi de faina', 8.50, TO_DATE('2024-07-01', 'YYYY-MM-DD'), NULL);
+INSERT INTO HRANA (id_hrana, denumire, stoc_kg, data_expirarii, categorie) 
+VALUES (12, 'Nectar pasari', 12.00, TO_DATE('2025-03-20', 'YYYY-MM-DD'), 'Lichid');
+
+SELECT * FROM HRANA;
+
+
+---TABEL FURNIZOR
+
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (1, 'AgroFood S.R.L.', '0711222333', 'contact@agrofood.ro', 'Bucuresti', 'RO12345678');
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (2, 'BioFerme S.A.', '0722333444', 'sales@bioferme.ro', 'Cluj-Napoca', 'RO87654321');
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (3, 'OceanFish Impex', '0733444555', 'comenzi@oceanfish.ro', 'Constanta', 'RO11223344');
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (4, 'Fructe Exotice SRL', '0744555666', 'import@fructe-exotice.ro', 'Ilfov', 'RO99887766');
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (5, 'ZooVet Distribution', '0755666777', 'office@zoovet.ro', 'Timisoara', 'RO55667788');
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (6, 'Fermierul Local Ion', '0766777888', NULL, 'Bacau', 'RO10203040');
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (7, 'GreenLife SRL', NULL, 'hello@greenlife.ro', 'Brasov', 'RO40302010');
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (8, 'Carnivor Expert', '0788999000', 'carne@expert.ro', NULL, 'RO50607080');
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (9, 'AquaLife Systems', NULL, NULL, 'Galati', 'RO80706050');
+INSERT INTO FURNIZOR (id_furnizor, nume, telefon, email, oras, cui) 
+VALUES (10, 'Nutritie Animala SA', '0799000111', 'suport@nutritie.ro', 'Iasi', 'RO13579246');
+
+SELECT * FROM FURNIZOR;
+
+
+---TABEL SPECTACOL
+
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (1, 'Zborul Pasarilor de Prada', 'Arena Centrala', TO_DATE('2024-06-01 10:00', 'YYYY-MM-DD HH24:MI'), 45, 200);
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (2, 'Hranirea Pinguinilor', 'Bazinul Nordic', TO_DATE('2024-06-01 12:30', 'YYYY-MM-DD HH24:MI'), 30, 100);
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (3, 'Magia Delfinilor (Simulare)', 'Acvariu Mare', TO_DATE('2024-06-02 14:00', 'YYYY-MM-DD HH24:MI'), 60, 300);
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (4, 'Prezentare Lei Asiatici', 'Zona Savana', TO_DATE('2024-06-03 16:00', 'YYYY-MM-DD HH24:MI'), 40, 150);
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (5, 'Maimutele Jucause', 'Jungla Tropicala', TO_DATE('2024-06-05 11:00', 'YYYY-MM-DD HH24:MI'), 35, 120);
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (6, 'Intercatiune Ferma', 'Curtea Copiilor', TO_DATE('2024-06-10 10:00', 'YYYY-MM-DD HH24:MI'), NULL, 50);
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (7, 'Reptilele Misterioase', 'Terariu Expozitie', TO_DATE('2024-06-12 13:00', 'YYYY-MM-DD HH24:MI'), 45, 80);
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (8, 'Show Papagali', 'Amfiteatru Mic', TO_DATE('2024-06-15 15:30', 'YYYY-MM-DD HH24:MI'), 30, NULL);
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (9, 'Noaptea la Zoo', 'Intreaga Gradina', TO_DATE('2024-07-01 20:00', 'YYYY-MM-DD HH24:MI'), 120, 500);
+INSERT INTO SPECTACOL (id_spectacol, nume, locatie, data_spectacol, durata_min, cap_spectatori) 
+VALUES (10, 'Demonstratie Dresaj', 'Arena Centrala', TO_DATE('2024-07-05 14:00', 'YYYY-MM-DD HH24:MI'), NULL, NULL);
+
+SELECT * FROM SPECTACOL;
+
+
+---TABEL VIZITATOR
+
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (1, 'Enache', 'Vlad', 'vlad.enache@mail.com', '0720111222');
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (2, 'Barbu', 'Elena', 'elena.b@mail.com', '0730111333');
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (3, 'Toma', 'Victor', 'victor.toma@mail.com', '0740111444');
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (4, 'Nicolae', 'Ana', 'ana.nicolae@mail.com', '0750111555');
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (5, 'Grigore', 'Marius', 'mgrigore@mail.com', '0760111666');
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (6, 'Lazar', 'Simona', NULL, '0770111777');
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (7, 'Dobre', 'Catalin', 'catalin.d@mail.com', NULL);
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (8, 'Iancu', 'Roxana', NULL, NULL);
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (9, 'Serban', 'Daniel', 'd.serban@mail.com', '0780111888');
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (10, 'Nita', 'Carmen', 'carmen.nita@mail.com', '0790111999');
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (11, 'Oprea', 'Florin', NULL, '0721123123');
+INSERT INTO VIZITATOR (id_vizitator, nume, prenume, email, telefon) 
+VALUES (12, 'Voicu', 'Mihaela', 'mihaela.voicu@mail.com', NULL);
+
+SELECT * FROM VIZITATOR;
+
+
+---TABEL BILET
+
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (1, 1, 'ADULT', 50.00, TO_DATE('2024-06-01', 'YYYY-MM-DD'), 'UTILIZAT');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (2, 2, 'COPIL', 25.00, TO_DATE('2024-06-01', 'YYYY-MM-DD'), 'UTILIZAT');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (3, 3, 'STUDENT', 35.00, TO_DATE('2024-06-15', 'YYYY-MM-DD'), 'VALID');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (4, 4, 'PENSIONAR', 30.00, TO_DATE('2024-05-10', 'YYYY-MM-DD'), 'EXPIRAT');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (5, 5, 'GRUP', 200.00, TO_DATE('2024-07-01', 'YYYY-MM-DD'), 'VALID');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (6, 6, 'ADULT', 50.00, TO_DATE('2024-05-20', 'YYYY-MM-DD'), 'UTILIZAT');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (7, 7, 'ADULT', 50.00, TO_DATE('2024-08-15', 'YYYY-MM-DD'), 'VALID');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (8, 8, NULL, 0.00, TO_DATE('2024-06-10', 'YYYY-MM-DD'), 'VALID');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (9, 9, 'STUDENT', 35.00, TO_DATE('2024-04-10', 'YYYY-MM-DD'), 'ANULAT');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (10, 10, 'COPIL', 25.00, TO_DATE('2024-09-01', 'YYYY-MM-DD'), NULL);
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (11, 1, 'ADULT', 50.00, TO_DATE('2024-10-01', 'YYYY-MM-DD'), 'VALID');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (12, 11, NULL, 50.00, TO_DATE('2024-06-20', 'YYYY-MM-DD'), 'VALID');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (13, 12, 'PENSIONAR', 30.00, TO_DATE('2024-03-01', 'YYYY-MM-DD'), 'EXPIRAT');
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (14, 2, 'ADULT', 50.00, TO_DATE('2024-06-25', 'YYYY-MM-DD'), NULL);
+INSERT INTO BILET (id_bilet, id_vizitator, tip_bilet, pret, data_valabilitate, status) 
+VALUES (15, 5, 'GRUP', 180.00, TO_DATE('2024-05-05', 'YYYY-MM-DD'), 'UTILIZAT');
+
+SELECT * FROM BILET;
+
+
+---TABEL RECENZIE
+
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu, data_review) 
+VALUES (1, 1, 1, 5, 'Leii au fost superbi! Un habitat foarte curat.', TO_DATE('2024-06-02', 'YYYY-MM-DD'));
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu, data_review) 
+VALUES (2, 2, 5, 4, 'Pasarile sunt frumoase, dar era cam galagie.', TO_DATE('2024-06-02', 'YYYY-MM-DD'));
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu, data_review) 
+VALUES (3, 4, 3, 5, 'Acvariul ne-a impresionat profund pe toti.', TO_DATE('2024-05-11', 'YYYY-MM-DD'));
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu, data_review) 
+VALUES (4, 6, 7, 3, 'Multe reptile erau ascunse si nu le-am putut vedea.', TO_DATE('2024-05-21', 'YYYY-MM-DD'));
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu, data_review) 
+VALUES (5, 5, 8, 5, 'Copiii au iubit ferma animalelor!', TO_DATE('2024-05-06', 'YYYY-MM-DD'));
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu, data_review) 
+VALUES (6, 9, 2, 4, NULL, TO_DATE('2024-04-12', 'YYYY-MM-DD'));
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu) 
+VALUES (7, 10, 1, 5, 'Excelent!');
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu, data_review) 
+VALUES (8, 3, 6, 2, 'Ursul polar parea plictisit.', TO_DATE('2024-06-16', 'YYYY-MM-DD'));
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu) 
+VALUES (9, 7, 4, 4, NULL);
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu, data_review) 
+VALUES (10, 8, 5, 5, 'Zborul pasarilor m-a lasat fara cuvinte.', TO_DATE('2024-06-11', 'YYYY-MM-DD'));
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu) 
+VALUES (11, 1, 3, 5, NULL);
+INSERT INTO RECENZIE (id_recenzie, id_vizitator, id_sector, nota, comentariu, data_review) 
+VALUES (12, 12, 9, 1, 'Zona de carantina era inchisa.', TO_DATE('2024-03-02', 'YYYY-MM-DD'));
+
+SELECT * FROM RECENZIE;
+
+
+---TABEL CONSULTATIE
+
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (1, 1, 3, TO_DATE('2024-05-10', 'YYYY-MM-DD'), 'Rana superficiala picior', 'Dezinfectie si bandaj', 4.5, 'Se va reevalua in 3 zile');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (2, 1, 5, TO_DATE('2024-05-12', 'YYYY-MM-DD'), 'Apatie usoara', 'Vitamine', 450.0, 'In observatie pentru modificari de dieta');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (3, 6, 18, TO_DATE('2024-05-15', 'YYYY-MM-DD'), 'Naparalire anormala', 'Supliment penaj', 3.2, 'Test de sange recomandat');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (4, 1, 9, TO_DATE('2024-01-16', 'YYYY-MM-DD'), 'Evaluare carantina', 'Deparazitare interna', 35.0, 'Animal nou sosit');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (5, 6, 29, TO_DATE('2024-04-20', 'YYYY-MM-DD'), 'Infectie bacteriana solzi', 'Antibiotic in apa', 120.5, 'Izolat temporar');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (6, 1, 1, TO_DATE('2024-02-10', 'YYYY-MM-DD'), 'Control de rutina', NULL, 195.0, 'Sanatos tun');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (7, 6, 11, 'Zgarietura cioc', 'Unguent', NULL, NULL);
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (8, 1, 7, TO_DATE('2024-05-01', 'YYYY-MM-DD'), NULL, NULL, 3500.0, 'Greutate in parametri normali');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (11, 1, 2, TO_DATE('2024-05-18', 'YYYY-MM-DD'), 'Probleme dentare', 'Detartraj', 280.0, 'Se recomanda dieta moale 3 zile');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (12, 6, 15, TO_DATE('2024-05-20', 'YYYY-MM-DD'), NULL, 'Vitamine penaj', 4.5, NULL);
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (13, 1, 22, TO_DATE('2024-05-21', 'YYYY-MM-DD'), 'Paraziti externi', 'Solutie speciala apa', NULL, 'Izolare 24h');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (14, 6, 8, TO_DATE('2024-06-01', 'YYYY-MM-DD'), 'Schiopatat picior stang', 'Repaus', 95.5, 'Fara leziuni osoase');
+INSERT INTO CONSULTATIE (id_consultatie, id_medic, id_animal, data_consultatie, diagnostic, tratament, greutate_masurata, observatii) 
+VALUES (15, 1, 12, TO_DATE('2024-06-05', 'YYYY-MM-DD'), 'Control general', NULL, 0.8, 'Perfect sanatos');
+
+SELECT * FROM CONSULTATIE; 
+
+
+---TABELE ASOCIATIVE
+---TABEL PARTICIPA_LA
+
+INSERT INTO PARTICIPA_LA (id_animal, id_dresor, id_spectacol, ore_pregatire, bonus_financiar, stare_animal_final) 
+VALUES (19, 5, 1, 15.5, 200.00, 'Excelenta, animal calm');
+INSERT INTO PARTICIPA_LA (id_animal, id_dresor, id_spectacol, ore_pregatire, bonus_financiar, stare_animal_final) 
+VALUES (20, 5, 1, 20.0, 250.00, 'Buna, usor agitat');
+INSERT INTO PARTICIPA_LA (id_animal, id_dresor, id_spectacol, ore_pregatire, bonus_financiar, stare_animal_final) 
+VALUES (13, 5, 2, 5.0, 100.00, 'Foarte entuziasmat dupa hrana');
+INSERT INTO PARTICIPA_LA (id_animal, id_dresor, id_spectacol, ore_pregatire, bonus_financiar, stare_animal_final) 
+VALUES (1, 5, 4, 30.0, 500.00, 'Obosit, necesita odihna');
+INSERT INTO PARTICIPA_LA (id_animal, id_dresor, id_spectacol, ore_pregatire, bonus_financiar, stare_animal_final) 
+VALUES (15, 5, 8, 8.0, NULL, 'Buna');
+INSERT INTO PARTICIPA_LA (id_animal, id_dresor, id_spectacol, ore_pregatire, bonus_financiar, stare_animal_final) 
+VALUES (11, 5, 8, NULL, 120.00, NULL);
+INSERT INTO PARTICIPA_LA (id_animal, id_dresor, id_spectacol, ore_pregatire, bonus_financiar, stare_animal_final) 
+VALUES (10, 5, 6, 4.0, 50.00, 'Relaxat');
+INSERT INTO PARTICIPA_LA (id_animal, id_dresor, id_spectacol, ore_pregatire, bonus_financiar, stare_animal_final) 
+VALUES (6, 5, 6, NULL, NULL, 'Speriat la final');
+INSERT INTO PARTICIPA_LA (id_animal, id_dresor, id_spectacol, ore_pregatire, bonus_financiar, stare_animal_final) 
+VALUES (7, 5, 10, 40.0, 800.00, NULL);
+
+SELECT * FROM PARTICIPA_LA;
+
+
+---TABEL INGRIJESTE
+
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (1, 2, 14, 'Curatenie tarc si hranire', TO_DATE('2023-02-01', 'YYYY-MM-DD'));
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (2, 2, 10, 'Curatenie tarc', TO_DATE('2023-02-01', 'YYYY-MM-DD'));
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (5, 7, 20, 'Monitorizare temperatura si igiena', TO_DATE('2022-08-10', 'YYYY-MM-DD'));
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (13, 7, 15, 'Curatenie bazin gheata', TO_DATE('2022-09-01', 'YYYY-MM-DD'));
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (21, 10, 8, 'Curatare filtre bazin', TO_DATE('2023-11-10', 'YYYY-MM-DD'));
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (25, 10, 5, 'Mentinere ph apa', TO_DATE('2023-11-15', 'YYYY-MM-DD'));
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (11, 2, NULL, 'Curatenie colivie', TO_DATE('2024-01-05', 'YYYY-MM-DD'));
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (6, 7, 7, NULL, TO_DATE('2023-01-10', 'YYYY-MM-DD'));
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (8, 2, 12, NULL, TO_DATE('2023-09-01', 'YYYY-MM-DD'));
+INSERT INTO INGRIJESTE (id_animal, id_ingrijitor, ore_pe_sap, tip_activitate, data_inceput) 
+VALUES (30, 7, 10, 'Observare carantina', TO_DATE('2024-02-26', 'YYYY-MM-DD'));
+
+SELECT * FROM INGRIJESTE;
+
+
+---TABEL MANANCA
+
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (1, 1, 7.5, 2, 'Carne fara os in weekend');
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (2, 2, 10.0, 3, 'Amestecat ocazional cu lucerna');
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (3, 5, 2.0, 4, 'Fara citrice');
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (5, 4, 12.0, 2, 'Se ofera inghetat vara');
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (11, 3, 0.3, 2, 'Seminte decorticate');
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (13, 4, 1.5, 3, 'Pesti mici, intregi');
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (21, 4, 15.0, 1, 'Hranire o data la doua zile');
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (7, 2, 50.0, 4, 'Se asigura apa din abundenta');
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (7, 6, 15.0, 2, 'Legume taiate cuburi mari');
+INSERT INTO MANANCA (id_animal, id_hrana, cant_zilnica_kg, portii_pe_zi, observatii) 
+VALUES (8, 1, 5.0, 1, 'Carne proaspata obligatoriu');
+
+SELECT * FROM MANANCA;
+
+
+---TABEL FURNIZEAZA
+
+INSERT INTO FURNIZEAZA (id_hrana, id_furnizor, pret_per_kg, timp_livrare_zile, cant_minima) 
+VALUES (1, 8, 22.50, 2, 50.00);
+INSERT INTO FURNIZEAZA (id_hrana, id_furnizor, pret_per_kg, timp_livrare_zile, cant_minima) 
+VALUES (2, 1, 5.00, 3, 200.00);
+INSERT INTO FURNIZEAZA (id_hrana, id_furnizor, pret_per_kg, timp_livrare_zile, cant_minima) 
+VALUES (3, 4, 16.50, 7, 20.00);
+INSERT INTO FURNIZEAZA (id_hrana, id_furnizor, pret_per_kg, timp_livrare_zile, cant_minima) 
+VALUES (5, 4, 7.50, 1, 30.00);
+INSERT INTO FURNIZEAZA (id_hrana, id_furnizor, pret_per_kg, timp_livrare_zile, cant_minima) 
+VALUES (6, 1, 5.50, 1, 50.00);
+INSERT INTO FURNIZEAZA (id_hrana, id_furnizor, pret_per_kg, timp_livrare_zile, cant_minima) 
+VALUES (7, 5, 40.00, NULL, 5.00);
+INSERT INTO FURNIZEAZA (id_hrana, id_furnizor, pret_per_kg, timp_livrare_zile, cant_minima) 
+VALUES (9, 6, 3.50, 2, NULL);
+INSERT INTO FURNIZEAZA (id_hrana, id_furnizor, pret_per_kg, timp_livrare_zile, cant_minima) 
+VALUES (10, 2, 14.00, NULL, NULL);
+INSERT INTO FURNIZEAZA (id_hrana, id_furnizor, pret_per_kg, timp_livrare_zile, cant_minima) 
+VALUES (12, 10, 75.00, 5, 10.00);
+
+SELECT * FROM FURNIZEAZA;
+
+
+---TABELE PRINCIPALE
+SELECT * FROM CONTRACT;
+SELECT * FROM ANGAJAT;
+SELECT * FROM SECTOR;
+SELECT * FROM ANIMAL;
+SELECT * FROM HRANA;
+SELECT * FROM FURNIZOR;
+SELECT * FROM SPECTACOL;
+SELECT * FROM VIZITATOR;
+SELECT * FROM BILET;
+SELECT * FROM RECENZIE;
+SELECT * FROM CONSULTATIE;
+
+--- SUBTABELE 
+SELECT * FROM MAMIFER;
+SELECT * FROM PASARE;
+SELECT * FROM PESTE;
+
+--- TABELE ASOCIATIVE 
+SELECT * FROM PARTICIPA_LA;
+SELECT * FROM INGRIJESTE;
+SELECT * FROM MANANCA;
+SELECT * FROM FURNIZEAZA;
